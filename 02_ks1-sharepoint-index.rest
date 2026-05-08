@@ -1,0 +1,189 @@
+@api-key = {{$dotenv AZURE_SEARCH_API_KEY}}
+@search-endpoint = {{$dotenv AZURE_SEARCH_ENDPOINT}}
+@api-version = 2025-11-01-Preview
+
+@name-prefix = {{$dotenv NAME_PREFIX}}
+@index-name = {{name-prefix}}-index
+
+@aoai-endpoint = {{$dotenv AZURE_OPENAI_ENDPOINT}}
+@aoai-key = {{$dotenv AZURE_OPENAI_API_KEY}}
+
+### Create index
+PUT {{search-endpoint}}/indexes/{{index-name}}?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+
+ {
+  "name": "{{index-name}}",
+  "description": "Search index for knowledge source '{{name-prefix}}'",
+  "permissionFilterOption": "enabled",
+  "purviewEnabled": false,
+  "fields": [
+    {
+      "name": "UserIds",
+      "type": "Collection(Edm.String)",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": false,
+      "stored": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "permissionFilter": "userIds",
+      "synonymMaps": []
+    },
+    {
+      "name": "GroupIds",
+      "type": "Collection(Edm.String)",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": false,
+      "stored": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "permissionFilter": "groupIds",
+      "synonymMaps": []
+    },
+    {
+      "name": "uid",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "stored": true,
+      "sortable": true,
+      "facetable": false,
+      "key": true,
+      "analyzer": "keyword",
+      "synonymMaps": []
+    },
+    {
+      "name": "snippet_parent_id",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "metadata_spo_item_path",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "snippet",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "analyzer": "ja.microsoft",
+      "synonymMaps": []
+    },
+    {
+      "name": "snippet_vector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "dimensions": 3072,
+      "vectorSearchProfile": "{{name-prefix}}-vector-search-profile",
+      "synonymMaps": []
+    }
+  ],
+  "scoringProfiles": [],
+  "suggesters": [],
+  "analyzers": [],
+  "normalizers": [],
+  "tokenizers": [],
+  "tokenFilters": [],
+  "charFilters": [],
+  "similarity": {
+    "@odata.type": "#Microsoft.Azure.Search.BM25Similarity"
+  },
+  "semantic": {
+    "defaultConfiguration": "{{name-prefix}}-semantic-configuration",
+    "configurations": [
+      {
+        "name": "{{name-prefix}}-semantic-configuration",
+        "flightingOptIn": false,
+        "rankingOrder": "BoostedRerankerScore",
+        "prioritizedFields": {
+          "prioritizedContentFields": [
+            {
+              "fieldName": "snippet"
+            }
+          ],
+          "prioritizedKeywordsFields": []
+        }
+      }
+    ]
+  },
+  "vectorSearch": {
+    "algorithms": [
+      {
+        "name": "{{name-prefix}}-vector-search-algorithm",
+        "kind": "hnsw",
+        "hnswParameters": {
+          "metric": "cosine",
+          "m": 4,
+          "efConstruction": 400,
+          "efSearch": 500
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "name": "{{name-prefix}}-vector-search-profile",
+        "algorithm": "{{name-prefix}}-vector-search-algorithm",
+        "vectorizer": "{{name-prefix}}-vectorizer",
+        "compression": "{{name-prefix}}-vector-search-scalar-quantization"
+      }
+    ],
+    "vectorizers": [
+      {
+        "name": "{{name-prefix}}-vectorizer",
+        "kind": "azureOpenAI",
+        "azureOpenAIParameters": {
+          "resourceUri": "{{aoai-endpoint}}",
+          "deploymentId": "text-embedding-3-large",
+          "apiKey": "{{aoai-key}}",
+          "modelName": "text-embedding-3-large"
+        }
+      }
+    ],
+    "compressions": [
+      {
+        "name": "{{name-prefix}}-vector-search-scalar-quantization",
+        "kind": "scalarQuantization",
+        "scalarQuantizationParameters": {
+          "quantizedDataType": "int8"
+        },
+        "rescoringOptions": {
+          "enableRescoring": true,
+          "defaultOversampling": 4,
+          "rescoreStorageMethod": "preserveOriginals"
+        }
+      }
+    ]
+  }
+}

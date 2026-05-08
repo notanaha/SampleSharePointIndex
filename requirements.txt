@@ -1,0 +1,8 @@
+python-dotenv
+azure-identity
+azure-core
+azure-search-documents==11.7.0b2
+azure-mgmt-core
+azure-ai-projects
+azure-mgmt-cognitiveservices
+requests

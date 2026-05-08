@@ -1,0 +1,35 @@
+@api-key = {{$dotenv AZURE_SEARCH_API_KEY}}
+@search-endpoint = {{$dotenv AZURE_SEARCH_ENDPOINT}}
+@api-version = 2025-11-01-Preview
+
+@name-prefix = {{$dotenv NAME_PREFIX}}
+@data-source-name = {{name-prefix}}-datasource
+
+@sharepoint-connection-string = {{$dotenv SHAREPOINT_CONNECTION_STRING}}
+
+### Create datasource
+PUT {{search-endpoint}}/datasources/{{data-source-name}}?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+
+{
+  "name": "{{data-source-name}}",
+  "description": "Data source for knowledge source '{{name-prefix}}'",
+  "type": "sharepoint",
+  "subtype": null,
+  "indexerPermissionOptions": [
+    "userIds",
+    "groupIds"
+  ],
+  "credentials": {
+    "connectionString": "{{sharepoint-connection-string}}"
+  },
+  "container": {
+    "name": "allSiteLibraries",
+    "query": null
+  },
+  "dataChangeDetectionPolicy": null,
+  "dataDeletionDetectionPolicy": null,
+  "encryptionKey": null,
+  "identity": null
+}

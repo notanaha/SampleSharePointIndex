@@ -1,0 +1,122 @@
+@api-key = {{$dotenv AZURE_SEARCH_API_KEY}}
+@search-endpoint = {{$dotenv AZURE_SEARCH_ENDPOINT}}
+@api-version = 2025-11-01-Preview
+
+@name-prefix = {{$dotenv NAME_PREFIX}}
+@skillset-name = {{name-prefix}}-skillset
+@index-name = {{name-prefix}}-index
+
+@aoai-endpoint = {{$dotenv AZURE_OPENAI_ENDPOINT}}
+@aoai-key = {{$dotenv AZURE_OPENAI_API_KEY}}
+
+@ai-endpoint = {{$dotenv AI_SERVICES_SUBDOMAIN_URL}}
+@ai-key = {{$dotenv AI_SERVICES_KEY}}
+
+### Create skillset
+PUT {{search-endpoint}}/skillsets/{{skillset-name}}?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+
+{
+  "name": "{{skillset-name}}",
+  "description": "Skillset for knowledge source '{{name-prefix}}'",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Util.ContentUnderstandingSkill",
+      "name": "contentUnderstandingSkill",
+      "context": "/document",
+      "extractionOptions": [
+        "images",
+        "locationMetadata"
+      ],
+      "inputs": [
+        {
+          "name": "file_data",
+          "source": "/document/file_data",
+          "inputs": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text_sections",
+          "targetName": "text_sections"
+        },
+        {
+          "name": "normalized_images",
+          "targetName": "normalized_images"
+        }
+      ],
+      "chunkingProperties": {
+        "unit": "characters",
+        "maximumLength": 2000,
+        "overlapLength": 200
+      }
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+      "name": "AzureOpenAIEmbeddingSkill",
+      "description": "Generate embeddings",
+      "context": "/document/text_sections/*",
+      "resourceUri": "{{aoai-endpoint}}",
+      "apiKey": "{{aoai-key}}",
+      "deploymentId": "text-embedding-3-large",
+      "dimensions": 3072,
+      "modelName": "text-embedding-3-large",
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/text_sections/*/content",
+          "inputs": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "embedding",
+          "targetName": "text_vector"
+        }
+      ]
+    }
+  ],
+  "cognitiveServices": {
+    "@odata.type": "#Microsoft.Azure.Search.AIServicesByKey",
+    "description": "AI Services for knowledge source",
+    "key": "{{ai-key}}",
+    "subdomainUrl": "{{ai-endpoint}}"
+  },
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "{{index-name}}",
+        "parentKeyFieldName": "snippet_parent_id",
+        "sourceContext": "/document/text_sections/*",
+        "mappings": [
+          {
+            "name": "snippet_vector",
+            "source": "/document/text_sections/*/text_vector",
+            "inputs": []
+          },
+          {
+            "name": "snippet",
+            "source": "/document/text_sections/*/content",
+            "inputs": []
+          },
+          {
+            "name": "metadata_spo_item_path",
+            "source": "/document/metadata_spo_item_path",
+            "inputs": []
+          },
+          { "name": "UserIds",
+            "source": "/document/metadata_user_ids"
+          },
+          { "name": "GroupIds",
+            "source": "/document/metadata_group_ids"
+          }
+
+        ]
+      }
+    ],
+    "parameters": {
+      "projectionMode": "skipIndexingParentDocuments"
+    }
+  }
+}

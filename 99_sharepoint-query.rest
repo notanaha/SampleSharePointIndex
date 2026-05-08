@@ -1,0 +1,70 @@
+@api-key = {{$dotenv AZURE_SEARCH_API_KEY}}
+@search-endpoint = {{$dotenv AZURE_SEARCH_ENDPOINT}}
+@api-version = 2025-11-01-Preview
+
+@name-prefix = {{$dotenv NAME_PREFIX}}
+@index-name = {{name-prefix}}-index
+
+# Get token: az account get-access-token --resource https://search.azure.com --query accessToken -o tsv
+@access-token = <paste-token-here>
+
+
+### [確認 Step 0] フィルターなし：インデックス内のドキュメント全件確認
+POST {{search-endpoint}}/indexes/{{index-name}}/docs/search?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+x-ms-query-source-authorization: {{access-token}}
+
+{
+  "search": "*",
+  "select": "snippet_parent_id, metadata_spo_item_path",
+  "count": true,
+  "top": 5
+}
+
+###
+
+### [確認 Step 1-a] UserIds が1件でも設定されているチャンクを確認
+POST {{search-endpoint}}/indexes/{{index-name}}/docs/search?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+x-ms-query-source-authorization: {{access-token}}
+
+{
+  "search": "*",
+  "filter": "UserIds/any()",
+  "select": "snippet_parent_id, metadata_spo_item_path",
+  "count": true,
+  "top": 3
+}
+
+###
+
+### [確認 Step 1-b] GroupIds が1件でも設定されているチャンクを確認
+POST {{search-endpoint}}/indexes/{{index-name}}/docs/search?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+x-ms-query-source-authorization: {{access-token}}
+
+{
+  "search": "*",
+  "filter": "GroupIds/any()",
+  "select": "snippet_parent_id, metadata_spo_item_path",
+  "count": true,
+  "top": 3
+}
+
+###
+
+### [確認 Step 2] 特定ユーザー ID でパーミッションフィルターが機能するか確認
+### x-ms-query-source-authorization ヘッダーに Entra ID のアクセストークンをセット
+POST {{search-endpoint}}/indexes/{{index-name}}/docs/search?api-version={{api-version}}
+api-key: {{api-key}}
+Content-Type: application/json
+x-ms-query-source-authorization: {{access-token}}
+
+{
+  "search": "*",
+  "select": "snippet_parent_id, metadata_spo_item_path",
+  "top": 5
+}
