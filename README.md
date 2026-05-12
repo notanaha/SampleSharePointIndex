@@ -130,11 +130,11 @@ Run `102_create_search_pipeline.ipynb` to create the pipeline via Python SDK, th
 
 ## Notes
 
-### Japanese Analyzer (`ja.microsoft`)
+### Analyzer Definition (e.g. `ja.microsoft`)
 
-The `snippet` field is configured with `analyzer_name="ja.microsoft"` (REST: `"analyzer": "ja.microsoft"`). This analyzer provides morphological analysis optimized for Japanese text.
+The `snippet` field is configured with `analyzer_name="ja.microsoft"` (REST: `"analyzer": "ja.microsoft"`). This analyzer provides morphological analysis optimized for Japanese text. If your content is primarily in another non-English language, you may want to choose a different language-specific analyzer.
 
-> **Important:** This analyzer setting must be specified via the REST API or the Python SDK (as shown in `02_ks1-sharepoint-index.rest` and `102_create_search_pipeline.ipynb`). It **cannot** be set through the Azure AI Search Portal, the Azure AI Foundry Portal, or via the automatic index creation path of a Knowledge Source definition — those interfaces do not expose custom analyzer configuration.
+> **Important:** This analyzer setting must be specified via the REST API or the Python SDK (as shown in `02_ks1-sharepoint-index.rest` and `102_create_search_pipeline.ipynb`). It **cannot** be set through the Azure AI Search Portal, the Azure AI Foundry Portal, or via the automatic index creation path of a Knowledge Source definition — those interfaces do not expose expected analyzer configuration.
 
 See [Language analyzers in Azure AI Search](https://learn.microsoft.com/azure/search/index-add-language-analyzers) for the full list of supported analyzers.
 
